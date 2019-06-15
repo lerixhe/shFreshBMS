@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"github.com/weilaihui/fdfs_client"
 	"log"
 	"math"
-	"math/rand"
 	"path"
 	"shFreshBMS/models"
 	"shFreshBMS/redispool"
-	"strconv"
-	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -489,7 +487,6 @@ func UploadFile(c *beego.Controller, fileKey string, extLimt []string, sizeLimit
 		log.Println("文件上传失败:", err)
 		return "", err
 	}
-	defer f.Close()
 	// 1.校验文件类型
 	// 2.校验文件大小
 	// 3.防止重名，重新命名
@@ -509,18 +506,36 @@ func UploadFile(c *beego.Controller, fileKey string, extLimt []string, sizeLimit
 		log.Println("文件超出大小")
 		return "", errors.New("文件大小超过限制")
 	}
-	//这里注意重命名的粒度，否则容易重复导致文件覆盖
-	// 这里由于连续调用两次上传文件，导致以秒命名的文件名出现覆盖
-	rand.Seed(time.Now().UnixNano())
-	num := strconv.Itoa(rand.Intn(100))
-	fileName := time.Now().Format("20060102150405") + num + ext
-	filePath = path.Join("static", "upload", fileName)
-	//保存文件到某路径下，程序默认当前路由的路径，故注意相对路径
-	err = c.SaveToFile(fileKey, filePath)
+	/*
+		//这里注意重命名的粒度，否则容易重复导致文件覆盖
+		// 这里由于连续调用两次上传文件，导致以秒命名的文件名出现覆盖
+		rand.Seed(time.Now().UnixNano())
+		num := strconv.Itoa(rand.Intn(100))
+		fileName := time.Now().Format("20060102150405") + num + ext
+		filePath = path.Join("static", "upload", fileName)
+		//保存文件到某路径下，程序默认当前路由的路径，故注意相对路径
+		err = c.SaveToFile(fileKey, filePath)
+		if err != nil {
+			log.Println("文件保存失败：", err)
+			return "", err
+		}
+		log.Println("文件上传成功!", filePath)
+	*/
+	//使用fastfds存储图片
+	client, err := fdfs_client.NewFdfsClient("/etc/fdfs/client.conf")
 	if err != nil {
-		log.Println("文件保存失败：", err)
+		log.Println("fastfdsc出错", err)
 		return "", err
 	}
-	log.Println("文件上传成功!", filePath)
-	return filePath, nil
+	//创建文件字节切片存储文件字节流数据
+	fileBuffer := make([]byte, h.Size)
+	f.Read(fileBuffer)
+	res, err := client.UploadAppenderByBuffer(fileBuffer, ext[1:])
+	if err != nil {
+		log.Println("文件上传失败：", err)
+		return "", err
+	}
+	log.Println("文件上传成功：", res)
+	defer f.Close()
+	return res.RemoteFileId, nil
 }
