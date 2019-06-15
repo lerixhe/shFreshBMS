@@ -24,7 +24,7 @@ func init() {
 	beego.Router("/Article/UpdateArticle", &controllers.ArticleController{}, "get:ShowUpdate;post:HandleUpdate")
 	//添加文章类型
 	beego.Router("/Article/AddArticleType", &controllers.ArticleController{}, "get:ShowAddType;post:HandleAddType")
-	//删除文章类型
+	//删除商品类型
 	beego.Router("/Article/DeleteArticleType", &controllers.ArticleController{}, "get:HandleDeleteType")
 	//用户退出登录
 	beego.Router("/logout", &controllers.UserController{}, "get:HandleLogout")

@@ -461,17 +461,21 @@ func (c *ArticleController) HandleAddType() {
 	//插入数据库成功后，此处不更新缓存，否则需要再次请求所有类型，刷新页面时更新更合适。
 }
 func (c *ArticleController) HandleDeleteType() {
-	/*
-		id, err := c.GetInt("id")
-		if err != nil {
-			log.Println("获取ID失败：", err)
-			return
-		}
-		articleType := models.ArticleType{Id: id}
-		o := orm.NewOrm()
-		o.Delete(&articleType)
-		c.Redirect("/Article/AddArticleType", 302)
-	*/
+	c.TplName = "addtype.html"
+	id, err := c.GetInt("id")
+	if err != nil {
+		log.Println("获取ID失败：", err)
+		return
+	}
+	goodsType := models.GoodsType{Id: id}
+	o := orm.NewOrm()
+	_, err = o.Delete(&goodsType)
+	if err != nil {
+		log.Println("删除数据失败：", err)
+		return
+	}
+	c.Redirect("/Article/AddArticleType", 302)
+
 }
 
 //上传文件/图片到服务器的imge文件夹下
